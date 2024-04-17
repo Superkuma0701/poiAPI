@@ -24,4 +24,9 @@ public class StudentServiceImpl implements StudentService {
     public List<Map<String, Object>> findAll() {
         return studentRepository.findAllAsMap();
     }
+
+    @Override
+    public List<Object[]> findAlll() {
+        return studentRepository.findAllByQuery();
+    }
 }

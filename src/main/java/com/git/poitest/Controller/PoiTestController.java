@@ -24,7 +24,7 @@ import java.util.TreeMap;
 public class PoiTestController {
     private static final Logger logger = LoggerFactory.getLogger(PoiTestController.class);
 
-    private StudentService studentService;
+    private final StudentService studentService;
 
     @Autowired
     public PoiTestController(StudentService studentService) {
@@ -67,13 +67,47 @@ public class PoiTestController {
 
     @GetMapping("/test2/{excelName}")
     public String exportStudentExcel(@PathVariable String excelName){
-        List<Map<String , Object>>studentList = studentService.findAll();
-        Map<String , Object>studentMap = studentList.get(0);
-        Set<String>keySet = studentMap.keySet();
-        for(String key : keySet){
-            System.out.println(studentMap.get(key));
-        }
+        List<Object[]>find = studentService.findAlll();
+        System.out.println(find);
+        try(XSSFWorkbook workbook = new XSSFWorkbook()){
+            //建立一張工作表,要是沒有工作表就匯出excel會打不開
+            XSSFSheet sheet = workbook.createSheet("student detail");
+            List<Map<String , Object>>studentList = studentService.findAll();
+            int rownum = 0 ;
+            int cellnumfortitle = 0;
+            for(Map<String , Object>map : studentList){
+                Set<String>keySet = map.keySet();
+                XSSFRow row = sheet.createRow(rownum++);
+                //先在第一行建立欄位名稱
+                if(cellnumfortitle<keySet.size()){
+                    for(String key : keySet){
+                        XSSFCell cell = row.createCell(cellnumfortitle++);
+                        cell.setCellValue(key);
+                    }
+                    //建立完跳到下一行
+                    row = sheet.createRow(rownum++);
+                }
+                //把欄位值加上去
+                int cellnumforvalue = 0;
+                for(String key : keySet){
+                    XSSFCell cell = row.createCell(cellnumforvalue++);
+                    if(map.get(key) instanceof String){
+                        cell.setCellValue((String)map.get(key));
+                    }else if (map.get(key) instanceof Integer){
+                        cell.setCellValue((Integer)map.get(key));
+                    }
+                }
+            }
+        //匯出excel檔案
+        FileOutputStream out = new FileOutputStream(excelName+".xlsx");
+        workbook.write(out);
+        out.close();
+        logger.info("success!!");
         return "success!";
+        }catch(Exception ex){
+            logger.error(ex.getMessage());
+            return "false!";
+        }
     }
 
 

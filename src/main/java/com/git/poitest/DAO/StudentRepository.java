@@ -12,4 +12,7 @@ public interface StudentRepository extends JpaRepository<Student,Integer> {
 
     @Query(value = "SELECT id, name, email, age FROM student", nativeQuery = true)
     List<Map<String,Object>>findAllAsMap();
+
+    @Query(value = "SELECT s.id,s.name,s.email,s.age FROM Student s")
+    List<Object[]>findAllByQuery();
 }
