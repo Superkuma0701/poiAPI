@@ -1,10 +1,9 @@
 package com.git.poitest.Controller;
 
 import com.git.poitest.Service.StudentService;
-import org.apache.poi.xssf.usermodel.XSSFCell;
-import org.apache.poi.xssf.usermodel.XSSFRow;
-import org.apache.poi.xssf.usermodel.XSSFSheet;
-import org.apache.poi.xssf.usermodel.XSSFWorkbook;
+import org.apache.poi.ss.usermodel.HorizontalAlignment;
+import org.apache.poi.ss.usermodel.VerticalAlignment;
+import org.apache.poi.xssf.usermodel.*;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.beans.factory.annotation.Autowired;
@@ -71,6 +70,10 @@ public class PoiTestController {
             //建立一張工作表,要是沒有工作表就匯出excel會打不開
             XSSFSheet sheet = workbook.createSheet("student detail");
             List<Map<String , Object>>studentList = studentService.findAll();
+            XSSFCellStyle style = workbook.createCellStyle();
+            style.setAlignment(HorizontalAlignment.CENTER);
+            style.setVerticalAlignment(VerticalAlignment.CENTER);
+            style.setWrapText(true);
             int rownum = 0 ;
             int cellnumfortitle = 0;
             for(Map<String , Object>map : studentList){
@@ -81,6 +84,7 @@ public class PoiTestController {
                     for(String key : keySet){
                         XSSFCell cell = row.createCell(cellnumfortitle++);
                         cell.setCellValue(key);
+                        cell.setCellStyle(style);
                     }
                     //建立完跳到下一行
                     row = sheet.createRow(rownum++);
@@ -94,7 +98,9 @@ public class PoiTestController {
                     }else if (map.get(key) instanceof Integer){
                         cell.setCellValue((Integer)map.get(key));
                     }
+                    cell.setCellStyle(style);
                 }
+
             }
         //匯出excel檔案
         FileOutputStream out = new FileOutputStream(excelName+".xlsx");
@@ -112,6 +118,10 @@ public class PoiTestController {
         try(XSSFWorkbook workbook = new XSSFWorkbook()){
             XSSFSheet sheet = workbook.createSheet("student list");
             List<Object[]>student = studentService.findAlll();
+            XSSFCellStyle style = workbook.createCellStyle();
+            style.setAlignment(HorizontalAlignment.CENTER);
+            style.setVerticalAlignment(VerticalAlignment.CENTER);
+            style.setWrapText(true);
             int rownum = 0;
             for(Object[] obj : student){
                 XSSFRow row = sheet.createRow(rownum++);
@@ -123,6 +133,7 @@ public class PoiTestController {
                     }else if (object instanceof Integer){
                         cell.setCellValue((Integer)object);
                     }
+                    cell.setCellStyle(style);
                 }
             }
             FileOutputStream out = new FileOutputStream(excelName+".xlsx") ;
