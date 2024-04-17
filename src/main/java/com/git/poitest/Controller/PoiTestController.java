@@ -67,8 +67,6 @@ public class PoiTestController {
 
     @GetMapping("/test2/{excelName}")
     public String exportStudentExcel(@PathVariable String excelName){
-        List<Object[]>find = studentService.findAlll();
-        System.out.println(find);
         try(XSSFWorkbook workbook = new XSSFWorkbook()){
             //建立一張工作表,要是沒有工作表就匯出excel會打不開
             XSSFSheet sheet = workbook.createSheet("student detail");
@@ -109,6 +107,32 @@ public class PoiTestController {
             return "false!";
         }
     }
-
-
+    @GetMapping("/test3/{excelName}")
+    public String export(@PathVariable String excelName){
+        try(XSSFWorkbook workbook = new XSSFWorkbook()){
+            XSSFSheet sheet = workbook.createSheet("student list");
+            List<Object[]>student = studentService.findAlll();
+            int rownum = 0;
+            for(Object[] obj : student){
+                XSSFRow row = sheet.createRow(rownum++);
+                int cellnum = 0;
+                for(Object object : obj){
+                    XSSFCell cell = row.createCell(cellnum++);
+                    if(object instanceof String){
+                        cell.setCellValue((String)object);
+                    }else if (object instanceof Integer){
+                        cell.setCellValue((Integer)object);
+                    }
+                }
+            }
+            FileOutputStream out = new FileOutputStream(excelName+".xlsx") ;
+            workbook.write(out);
+            out.close();
+            logger.info("success!");
+            return "success!";
+        }catch(Exception ex){
+            logger.error(ex.getMessage());
+            return "fail!";
+        }
+    }
 }
