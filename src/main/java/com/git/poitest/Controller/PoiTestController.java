@@ -1,22 +1,20 @@
 package com.git.poitest.Controller;
 
 import com.git.poitest.Service.StudentService;
-import org.apache.poi.ss.usermodel.HorizontalAlignment;
-import org.apache.poi.ss.usermodel.VerticalAlignment;
+import com.git.poitest.Util.ExcelUtil;
+import org.apache.poi.ss.usermodel.*;
 import org.apache.poi.xssf.usermodel.*;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.beans.factory.annotation.Autowired;
-import org.springframework.web.bind.annotation.GetMapping;
-import org.springframework.web.bind.annotation.PathVariable;
-import org.springframework.web.bind.annotation.RequestMapping;
-import org.springframework.web.bind.annotation.RestController;
+import org.springframework.http.HttpStatus;
+import org.springframework.http.ResponseEntity;
+import org.springframework.web.bind.annotation.*;
+import org.springframework.web.multipart.MultipartFile;
 
 import java.io.FileOutputStream;
-import java.util.List;
-import java.util.Map;
-import java.util.Set;
-import java.util.TreeMap;
+import java.text.DecimalFormat;
+import java.util.*;
 
 @RestController
 @RequestMapping("/poi")
@@ -30,6 +28,11 @@ public class PoiTestController {
         this.studentService = studentService;
     }
 
+    /**
+     * @Author : Felix
+     * @Date : 2024-04-18
+     * @Description : 匯出成excel試做
+     */
     @GetMapping("/test")
     public void poiTest(){
         try(XSSFWorkbook workbook = new XSSFWorkbook()){
@@ -64,6 +67,11 @@ public class PoiTestController {
         }
     }
 
+    /**
+     * @Author : Felix
+     * @Date : 2024-04-18
+     * @Description : 將資料庫回傳的list map匯出成excel(有標題，但欄位沒有按照順序)
+     */
     @GetMapping("/test2/{excelName}")
     public String exportStudentExcel(@PathVariable String excelName){
         try(XSSFWorkbook workbook = new XSSFWorkbook()){
@@ -113,6 +121,12 @@ public class PoiTestController {
             return "false!";
         }
     }
+
+    /**
+     * @Author : Felix
+     * @Date : 2024-04-18
+     * @Description : 講資料庫回傳的List<Object[]>資料匯出成excel(會按照欄位的順序，但不會有欄位名稱)
+     */
     @GetMapping("/test3/{excelName}")
     public String export(@PathVariable String excelName){
         try(XSSFWorkbook workbook = new XSSFWorkbook()){
@@ -145,5 +159,55 @@ public class PoiTestController {
             logger.error(ex.getMessage());
             return "fail!";
         }
+    }
+
+    /**
+     * @Author : Felix
+     * @Date : 2024-04-18
+     * @Description : 將excel表格變成list map
+     */
+    @PostMapping("/import")
+    public ResponseEntity<?> importFile(@RequestParam("file") MultipartFile file){
+        List<Map<String , Object>>result = new ArrayList<>();
+        //透過方法生成對應的workbook
+        Workbook workbook = ExcelUtil.getWorkBook(file);
+        if(Objects.nonNull(workbook)){
+            //欄位名稱
+            List<String> sheetTitle = ExcelUtil.getSheetTitles(workbook);
+
+            Sheet sheet = workbook.getSheetAt(0);
+            int lastRowNum = sheet.getLastRowNum();
+            //先讓row去跑回圈,cell跑完換下一個row
+            for (int i = 1 ; i <= lastRowNum ; i++){
+                Row row = sheet.getRow(i);
+                Map<String , Object>rowMap = new HashMap<>();
+                int lastCellNum = row.getLastCellNum();
+                //cell去跑回圈
+                for(int j = 0 ; j < lastCellNum ; j++){
+                    Cell cell = row.getCell(j);
+                    //依照資料型態去分類
+                    switch(cell.getCellType()){
+                        case NUMERIC :
+                            double cellNum = cell.getNumericCellValue();
+                            DecimalFormat df = new DecimalFormat("0");
+                            rowMap.put(sheetTitle.get(j),df.format((cellNum)));
+                            break;
+                        case STRING:
+                            String cellString = cell.getStringCellValue();
+                            rowMap.put(sheetTitle.get(j),cellString);
+                            break;
+                        default:
+                            break;
+                    }
+                }
+                result.add(rowMap);
+            }
+        }else{
+            logger.error("false");
+            return new ResponseEntity<>("false", HttpStatus.INTERNAL_SERVER_ERROR);
+        }
+        System.out.println(result);
+        logger.info("success");
+        return new ResponseEntity<>(result,HttpStatus.OK);
     }
 }
